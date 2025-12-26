@@ -1,26 +1,29 @@
 pipeline {
     agent any
-
     stages {
         stage('Checkout') {
-            steps {
-                // This pulls your code from GitHub/GitLab
-                checkout scm
-            }
+            steps { checkout scm }
         }
-
+        
         stage('Install Dependencies') {
             steps {
-                // Ensure the gpiozero library is available
                 sh 'pip3 install gpiozero --break-system-packages'
             }
         }
 
-        stage('Deploy & Run') {
+        stage('Run Unit Tests') {
             steps {
-                echo 'Starting the LED Blink script...'
-                // Running in the background so Jenkins doesn't hang
-                sh 'nohup python3 blink.py &'
+                echo 'Testing code logic with Mock Pins...'
+                // This will fail the build if the test_blink.py script fails
+                sh 'python3 test_blink.py'
+            }
+        }
+
+        stage('Deploy & Run') {
+            // This only runs if 'Run Unit Tests' passes!
+            steps {
+                sh 'pkill -f blink.py || true'
+                sh 'nohup python3 blink.py > /dev/null 2>&1 &'
             }
         }
     }
